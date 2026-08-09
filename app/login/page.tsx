@@ -38,14 +38,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main className="site-shell narrow-shell">
       <Link className="back-link" href="/">
-        공개 화면으로 돌아가기
+        말씀편지 목록으로 돌아가기
       </Link>
 
       <section className="panel auth-panel">
-        <p className="eyebrow">관리자 전용</p>
-        <h1>로그인</h1>
+        <p className="eyebrow">우리 가족 말씀편지</p>
+        <h1>글쓴이 로그인</h1>
         <p className="panel-copy">
-          Supabase Dashboard에서 미리 만든 관리자 계정으로 로그인합니다.
+          권사님 계정으로 로그인하면 묵상과 편지를 새로 남길 수 있습니다.
         </p>
 
         {!configured ? <SetupNotice compact /> : null}

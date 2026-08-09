@@ -37,10 +37,11 @@ export default async function Home() {
   return (
     <main className="site-shell public-shell">
       <header className="hero">
-        <p className="eyebrow">Base for Anything</p>
-        <h1>함께 나누는 이야기</h1>
+        <p className="eyebrow">우리 가족 말씀편지</p>
+        <h1>오늘도 말씀 안에서,<br />우리 함께</h1>
         <p className="hero-copy">
-          소중한 소식과 기록을 한곳에 모아 가족과 편하게 나눕니다.
+          묵상한 말씀과 사랑하는 가족에게 전하고 싶은 마음을 이곳에
+          차곡차곡 남깁니다.
         </p>
       </header>
 
@@ -55,8 +56,8 @@ export default async function Home() {
 
       {configured && !error && entries.length === 0 ? (
         <section className="empty-state">
-          <h2>아직 등록된 내용이 없습니다</h2>
-          <p>첫 번째 이야기가 등록되면 이곳에서 함께 볼 수 있습니다.</p>
+          <h2>아직 도착한 말씀편지가 없습니다</h2>
+          <p>첫 묵상이나 편지가 등록되면 이곳에서 함께 읽을 수 있습니다.</p>
         </section>
       ) : null}
 
@@ -69,8 +70,8 @@ export default async function Home() {
       ) : null}
 
       <footer className="site-footer">
-        <p>같은 주소에서 누구나 최신 내용을 확인할 수 있습니다.</p>
-        <Link href="/login">관리</Link>
+        <p>멀리 있어도 같은 말씀과 마음을 함께 나눕니다.</p>
+        <Link href="/login">말씀편지 쓰기</Link>
       </footer>
     </main>
   );

@@ -18,8 +18,8 @@ export default async function AdminPage() {
           공개 화면으로 돌아가기
         </Link>
         <section className="panel">
-          <p className="eyebrow">관리자 화면</p>
-          <h1>연결 준비가 필요합니다</h1>
+          <p className="eyebrow">우리 가족 말씀편지</p>
+          <h1>먼저 저장 공간을 연결해 주세요</h1>
           <SetupNotice compact />
         </section>
       </main>
@@ -48,8 +48,8 @@ export default async function AdminPage() {
     <main className="site-shell narrow-shell">
       <header className="admin-header">
         <div>
-          <p className="eyebrow">관리자 화면</p>
-          <h1>새 내용 등록</h1>
+          <p className="eyebrow">우리 가족 말씀편지</p>
+          <h1>오늘의 말씀과 마음 남기기</h1>
           <p className="signed-in">{email} 계정으로 로그인됨</p>
         </div>
         <form action={logout}>
@@ -61,13 +61,13 @@ export default async function AdminPage() {
 
       <section className="panel">
         <p className="panel-copy">
-          저장한 내용은 공개 화면에 최신순으로 표시됩니다.
+          저장한 묵상과 편지는 가족이 보는 공개 화면에 최신순으로 표시됩니다.
         </p>
         <EntryForm />
       </section>
 
       <Link className="secondary-link" href="/">
-        공개 화면에서 확인하기
+        가족이 보는 화면에서 확인하기
       </Link>
     </main>
   );

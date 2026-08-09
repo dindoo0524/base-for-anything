@@ -1,13 +1,14 @@
 :root {
-  --background: #f5f4ef;
-  --surface: #fffdf8;
+  --background: #f6f0e7;
+  --surface: #fffaf2;
   --surface-strong: #ffffff;
-  --text: #252923;
-  --muted: #667066;
-  --line: #dfe3da;
-  --primary: #41644a;
-  --primary-dark: #304b37;
-  --primary-soft: #e6eee5;
+  --text: #3a302b;
+  --muted: #776c63;
+  --line: #e3d7c8;
+  --primary: #7a3f4c;
+  --primary-dark: #592d37;
+  --primary-soft: #f4e6e8;
+  --olive: #697053;
   --error: #9d342b;
   --error-soft: #fff0ed;
   --success: #24653b;
@@ -27,9 +28,11 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
   color: var(--text);
   background:
-    radial-gradient(circle at 92% 2%, rgba(202, 220, 198, 0.55), transparent 28rem),
+    radial-gradient(circle at 92% 2%, rgba(219, 205, 179, 0.65), transparent 29rem),
+    radial-gradient(circle at 8% 48%, rgba(215, 220, 194, 0.42), transparent 24rem),
     var(--background);
   font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
     "Noto Sans KR", "Malgun Gothic", sans-serif;
@@ -57,7 +60,8 @@ a {
 }
 
 .site-shell {
-  width: min(100% - 32px, 720px);
+  width: calc(100% - 32px);
+  max-width: 720px;
   margin: 0 auto;
   padding: 48px 0 36px;
 }
@@ -67,11 +71,11 @@ a {
 }
 
 .narrow-shell {
-  width: min(100% - 32px, 580px);
+  max-width: 580px;
 }
 
 .hero {
-  padding: 18px 2px 28px;
+  padding: 20px 2px 34px;
 }
 
 .eyebrow {
@@ -85,8 +89,10 @@ a {
 
 .hero h1,
 .panel h1,
-.admin-header h1 {
+.admin-header h1,
+.letter-detail h1 {
   margin: 0;
+  font-family: Georgia, "AppleMyungjo", "Noto Serif KR", serif;
   font-size: clamp(2rem, 8vw, 3.25rem);
   line-height: 1.14;
   letter-spacing: -0.045em;
@@ -107,6 +113,7 @@ a {
   font-size: 1.02rem;
   line-height: 1.7;
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .entry-list {
@@ -118,14 +125,20 @@ a {
 .panel,
 .notice,
 .empty-state {
-  border: 1px solid rgba(201, 207, 198, 0.8);
-  border-radius: 22px;
-  background: rgba(255, 253, 248, 0.94);
+  border: 1px solid rgba(214, 199, 180, 0.88);
+  border-radius: 16px;
+  background: rgba(255, 250, 242, 0.95);
   box-shadow: var(--shadow);
 }
 
 .entry-card {
   padding: 22px;
+}
+
+.entry-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
 }
 
 .entry-card-heading {
@@ -139,6 +152,7 @@ a {
 .notice h2,
 .empty-state h2 {
   margin: 0;
+  font-family: Georgia, "AppleMyungjo", "Noto Serif KR", serif;
   font-size: 1.22rem;
   line-height: 1.4;
   letter-spacing: -0.025em;
@@ -150,7 +164,7 @@ a {
   font-size: 0.82rem;
 }
 
-.entry-card > p,
+.entry-card-preview,
 .notice > p:last-child,
 .empty-state p {
   margin: 0;
@@ -159,6 +173,27 @@ a {
   line-height: 1.75;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.entry-card-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.read-more {
+  display: inline-block;
+  margin-top: 17px;
+  color: var(--primary);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.entry-card-link:hover .read-more {
+  color: var(--primary-dark);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 .notice,
@@ -173,8 +208,8 @@ a {
 
 .notice-setup {
   margin-bottom: 18px;
-  border-color: #cadac7;
-  background: var(--primary-soft);
+  border-color: #d8c9b7;
+  background: #f7eee1;
 }
 
 .notice-error {
@@ -215,6 +250,59 @@ a {
   color: var(--primary-dark);
   font-weight: 700;
   text-underline-offset: 3px;
+}
+
+.detail-shell {
+  padding-bottom: 52px;
+}
+
+.letter-detail {
+  padding: clamp(28px, 8vw, 48px);
+  border: 1px solid #ddcfbd;
+  border-radius: 12px;
+  background: rgba(255, 251, 244, 0.97);
+  box-shadow: var(--shadow);
+}
+
+.letter-detail h1 {
+  font-size: clamp(2rem, 8vw, 2.9rem);
+  line-height: 1.25;
+}
+
+.letter-detail time {
+  display: block;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.letter-divider {
+  margin: 26px 0;
+  color: var(--olive);
+  font-family: Georgia, serif;
+  font-size: 1.2rem;
+  letter-spacing: 0.35em;
+  text-align: center;
+}
+
+.letter-content {
+  color: #463c36;
+  font-size: 1.04rem;
+  line-height: 1.95;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.detail-footer {
+  margin-top: 22px;
+  color: var(--muted);
+  font-family: Georgia, "AppleMyungjo", "Noto Serif KR", serif;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.detail-footer p {
+  margin: 0;
 }
 
 .back-link {
