@@ -37,7 +37,7 @@ export default function Home() {
           <article className="preview-card">
             <div className="preview-meta">
               <span className="preview-avatar small">민</span>
-              <span>민숙 권사님</span>
+              <span>가족 관리자</span>
               <small>오늘</small>
             </div>
             <h2>오늘 마음에 남은 말씀</h2>
@@ -66,12 +66,12 @@ export default function Home() {
         <article>
           <span>02</span>
           <h2>누구나 함께 작성</h2>
-          <p>권사님뿐 아니라 가족들도 자신의 이야기를 남깁니다.</p>
+          <p>관리자뿐 아니라 가족들도 자신의 이야기를 남깁니다.</p>
         </article>
         <article>
           <span>03</span>
           <h2>역할에 맞는 관리</h2>
-          <p>가족은 자기 글을, 권사님은 모든 글을 정리할 수 있습니다.</p>
+          <p>가족은 자기 글을, 최고 관리자는 모든 글을 정리할 수 있습니다.</p>
         </article>
       </section>
 

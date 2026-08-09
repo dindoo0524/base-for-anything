@@ -28,7 +28,7 @@ export function FamilyNav({ active, displayName, role }: FamilyNavProps) {
           <span className="member-avatar" aria-hidden="true">{initial}</span>
           <span className="member-copy">
             <strong>{displayName}</strong>
-            <small>{role === "admin" ? "Admin · 권사님" : "Family · 가족"}</small>
+            <small>{role === "admin" ? "Admin · 관리자" : "Family · 가족"}</small>
           </span>
           <form action={logout}>
             <button className="logout-button" type="submit">로그아웃</button>

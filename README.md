@@ -6,7 +6,7 @@
 
 | 사용자 | 가족 글 읽기 | 글쓰기 | 삭제 |
 | --- | --- | --- | --- |
-| 권사님 `Admin` | 전체 | 가능 | 모든 글 |
+| 최고 관리자 `Admin` | 전체 | 가능 | 모든 글 |
 | 가족 `Member` | 전체 | 가능 | 자기 글만 |
 | 외부 방문자 | 불가 | 불가 | 불가 |
 
@@ -39,23 +39,23 @@ v2.0 migration은 다음 내용을 적용합니다.
 - 가족 회원의 전체 글 조회와 자기 글 삭제
 - 관리자의 모든 글 삭제
 
-## 3. 권사님과 가족 계정 만들기
+## 3. 관리자와 가족 계정 만들기
 
-Supabase Dashboard의 **Authentication → Users → Add user**에서 권사님과 가족 계정을 만듭니다.
+Supabase Dashboard의 **Authentication → Users → Add user**에서 관리자와 가족 계정을 만듭니다.
 
-v2.0 migration 실행 후 새로 만든 계정은 자동으로 `member`가 됩니다. 권사님 계정은 SQL Editor에서 아래처럼 `admin`으로 바꿉니다.
+v2.0 migration 실행 후 새로 만든 계정은 자동으로 `member`가 됩니다. 최고 관리자 계정은 SQL Editor에서 아래처럼 `admin`으로 바꿉니다.
 
 ```sql
 update public.profiles
-set role = 'admin', display_name = '민숙 권사님'
+set role = 'admin', display_name = '가족 관리자'
 where id = (
   select id
   from auth.users
-  where email = '권사님이메일@example.com'
+  where email = '관리자이메일@example.com'
 );
 ```
 
-예시 이메일을 실제 권사님 이메일로 바꿔 실행합니다. 가족 이름도 같은 방식으로 `display_name`만 변경할 수 있습니다.
+예시 이메일을 실제 관리자 이메일로 바꿔 실행합니다. 가족 이름도 같은 방식으로 `display_name`만 변경할 수 있습니다.
 
 ```sql
 update public.profiles
@@ -92,7 +92,7 @@ service role 또는 secret key를 브라우저 환경변수에 넣지 않습니�
 | 주소 | 역할 |
 | --- | --- |
 | `/` | 외부 공개용 프로젝트 소개 |
-| `/login` | 권사님과 가족 공용 로그인 |
+| `/login` | 관리자와 가족 공용 로그인 |
 | `/family` | 로그인한 가족만 보는 글 목록 |
 | `/entries/[id]` | 로그인한 가족만 보는 상세 글 |
 | `/admin` | 로그인한 가족의 새 글 작성 |
@@ -108,7 +108,7 @@ service role 또는 secret key를 브라우저 환경변수에 넣지 않습니�
 2. 가족 A에게 자기 글의 삭제 버튼이 보이는지 확인합니다.
 3. 가족 B `Member` 계정으로 로그인해 가족 A의 글을 읽습니다.
 4. 가족 B에게 가족 A 글의 삭제 버튼이 보이지 않는지 확인합니다.
-5. 권사님 `Admin` 계정으로 로그인해 모든 글에 삭제 버튼이 보이는지 확인합니다.
+5. 최고 관리자 `Admin` 계정으로 로그인해 모든 글에 삭제 버튼이 보이는지 확인합니다.
 6. 로그아웃한 뒤 가족 게시판이 열리지 않는지 확인합니다.
 
 화면에서 버튼을 숨기는 것과 별개로 Supabase RLS가 같은 권한을 데이터베이스에서 다시 강제합니다.

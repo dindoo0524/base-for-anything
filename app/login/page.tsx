@@ -46,7 +46,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <p className="eyebrow">Family only</p>
         <h1>가족 공간에 오신 것을<br />환영합니다</h1>
         <p className="panel-copy">
-          권사님 또는 가족 계정으로 로그인해 함께 읽고 글을 남겨보세요.
+          관리자 또는 가족 계정으로 로그인해 함께 읽고 글을 남겨보세요.
         </p>
 
         {!configured ? <SetupNotice compact /> : null}

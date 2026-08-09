@@ -126,11 +126,11 @@ using (
   or (select private.is_family_admin())
 );
 
--- 실행 후 권사님 계정 이메일을 넣어 최고 권한으로 바꿉니다.
--- 아래 예시의 이메일을 실제 권사님 이메일로 바꾼 뒤 한 번만 실행하세요.
+-- 실행 후 관리자 계정 이메일을 넣어 최고 권한으로 바꿉니다.
+-- 아래 예시의 이메일을 실제 관리자 이메일로 바꾼 뒤 한 번만 실행하세요.
 --
 -- update public.profiles
--- set role = 'admin', display_name = '민숙 권사님'
+-- set role = 'admin', display_name = '가족 관리자'
 -- where id = (
---   select id from auth.users where email = '권사님이메일@example.com'
+--   select id from auth.users where email = '관리자이메일@example.com'
 -- );
