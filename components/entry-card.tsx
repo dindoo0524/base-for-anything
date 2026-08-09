@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { deleteEntry } from "@/app/admin/actions";
+import { DeleteEntryForm } from "@/components/delete-entry-form";
 
 export type Entry = {
   id: string;
@@ -51,12 +51,7 @@ export function EntryCard({
       </Link>
 
       {canDelete ? (
-        <form action={deleteEntry} className="entry-delete-form">
-          <input type="hidden" name="entryId" value={entry.id} />
-          <button className="delete-button" type="submit">
-            삭제
-          </button>
-        </form>
+        <DeleteEntryForm entryId={entry.id} />
       ) : null}
     </article>
   );

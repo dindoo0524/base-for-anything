@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { deleteEntry } from "@/app/admin/actions";
+import { DeleteEntryForm } from "@/components/delete-entry-form";
 import { FamilyNav } from "@/components/family-nav";
 import { SetupNotice } from "@/components/setup-notice";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -93,10 +93,7 @@ export default async function EntryDetailPage({ params }: EntryDetailPageProps) 
         <div className="letter-content">{entry.content}</div>
 
         {canDelete ? (
-          <form action={deleteEntry} className="detail-delete-form">
-            <input type="hidden" name="entryId" value={entry.id} />
-            <button className="delete-button" type="submit">이 글 삭제</button>
-          </form>
+          <DeleteEntryForm entryId={entry.id} detail />
         ) : null}
       </article>
 
