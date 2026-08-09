@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { deleteEntry } from "@/app/admin/actions";
+import { FamilyNav } from "@/components/family-nav";
 import { SetupNotice } from "@/components/setup-notice";
 import { isSupabaseConfigured } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
+import { getFamilyMember } from "@/lib/family";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,7 @@ type EntryDetail = {
   id: string;
   title: string;
   content: string;
+  author_id: string;
   created_at: string;
 };
 
@@ -23,71 +26,81 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   day: "numeric",
 });
 
-async function getEntry(id: string) {
-  try {
-    const supabase = await createClient();
-
-    if (!supabase) {
-      return { entry: null, error: null };
-    }
-
-    const { data, error } = await supabase
-      .from("entries")
-      .select("id, title, content, created_at")
-      .eq("id", id)
-      .maybeSingle();
-
-    return { entry: data as EntryDetail | null, error };
-  } catch {
-    return { entry: null, error: new Error("Unable to load entry") };
-  }
-}
-
-export default async function EntryDetailPage({
-  params,
-}: EntryDetailPageProps) {
-  const configured = isSupabaseConfigured();
+export default async function EntryDetailPage({ params }: EntryDetailPageProps) {
   const { id } = await params;
 
-  if (!configured) {
+  if (!isSupabaseConfigured()) {
     return (
       <main className="site-shell narrow-shell">
-        <Link className="back-link" href="/">
-          말씀편지 목록으로 돌아가기
-        </Link>
+        <Link className="back-link" href="/">소개 화면으로 돌아가기</Link>
         <SetupNotice />
       </main>
     );
   }
 
-  const { entry, error } = await getEntry(id);
+  const { supabase, member } = await getFamilyMember();
 
-  if (error || !entry) notFound();
+  if (!supabase || !member) redirect("/login");
 
+  const { data, error } = await supabase
+    .from("entries")
+    .select("id, title, content, author_id, created_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) notFound();
+
+  const entry = data as EntryDetail;
+  const { data: authorProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", entry.author_id)
+    .maybeSingle();
+
+  const authorName =
+    typeof authorProfile?.display_name === "string"
+      ? authorProfile.display_name
+      : "가족";
   const createdAt = new Date(entry.created_at);
   const readableDate = Number.isNaN(createdAt.getTime())
     ? "날짜 정보 없음"
     : dateFormatter.format(createdAt);
+  const canDelete = member.role === "admin" || member.id === entry.author_id;
 
   return (
-    <main className="site-shell narrow-shell detail-shell">
-      <Link className="back-link" href="/">
-        말씀편지 목록으로 돌아가기
-      </Link>
+    <main className="app-shell detail-shell">
+      <FamilyNav
+        active="family"
+        displayName={member.displayName}
+        role={member.role}
+      />
+
+      <Link className="back-link" href="/family">가족 글 목록으로</Link>
 
       <article className="letter-detail">
-        <p className="eyebrow">우리 가족 말씀편지</p>
-        <h1>{entry.title}</h1>
-        <time dateTime={entry.created_at}>{readableDate}</time>
-        <div className="letter-divider" aria-hidden="true">
-          · · ·
+        <div className="detail-author">
+          <span className="entry-avatar" aria-hidden="true">
+            {authorName.trim().charAt(0) || "가"}
+          </span>
+          <div>
+            <strong>{authorName}</strong>
+            <time dateTime={entry.created_at}>{readableDate}</time>
+          </div>
         </div>
+
+        <p className="eyebrow">Family story</p>
+        <h1>{entry.title}</h1>
         <div className="letter-content">{entry.content}</div>
+
+        {canDelete ? (
+          <form action={deleteEntry} className="detail-delete-form">
+            <input type="hidden" name="entryId" value={entry.id} />
+            <button className="delete-button" type="submit">이 글 삭제</button>
+          </form>
+        ) : null}
       </article>
 
-      <footer className="detail-footer">
-        <p>사랑하는 가족에게, 오늘의 마음을 전합니다.</p>
-      </footer>
+      <p className="private-note">이 글은 로그인한 가족만 읽을 수 있습니다.</p>
     </main>
   );
 }

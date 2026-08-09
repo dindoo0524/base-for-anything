@@ -30,5 +30,5 @@ export async function login(formData: FormData) {
     redirect("/login?error=invalid-credentials");
   }
 
-  redirect("/admin");
+  redirect("/family");
 }

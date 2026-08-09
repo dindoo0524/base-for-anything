@@ -1,74 +1,55 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { EntryForm } from "@/components/entry-form";
+import { FamilyNav } from "@/components/family-nav";
 import { SetupNotice } from "@/components/setup-notice";
 import { isSupabaseConfigured } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
-import { logout } from "./actions";
+import { getFamilyMember } from "@/lib/family";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
-  const configured = isSupabaseConfigured();
-
-  if (!configured) {
+export default async function WritePage() {
+  if (!isSupabaseConfigured()) {
     return (
       <main className="site-shell narrow-shell">
-        <Link className="back-link" href="/">
-          공개 화면으로 돌아가기
-        </Link>
-        <section className="panel">
-          <p className="eyebrow">우리 가족 말씀편지</p>
-          <h1>먼저 저장 공간을 연결해 주세요</h1>
-          <SetupNotice compact />
-        </section>
+        <Link className="back-link" href="/">소개 화면으로 돌아가기</Link>
+        <SetupNotice />
       </main>
     );
   }
 
-  const supabase = await createClient();
-  let isAuthenticated = false;
-  let email = "관리자";
+  const { member, profileError } = await getFamilyMember();
 
-  try {
-    const result = await supabase?.auth.getClaims();
-    const claims = result?.data?.claims;
-    isAuthenticated = Boolean(claims);
-
-    if (typeof claims?.email === "string") {
-      email = claims.email;
-    }
-  } catch {
-    redirect("/login");
-  }
-
-  if (!isAuthenticated) redirect("/login");
+  if (!member) redirect("/login");
 
   return (
-    <main className="site-shell narrow-shell">
-      <header className="admin-header">
-        <div>
-          <p className="eyebrow">우리 가족 말씀편지</p>
-          <h1>오늘의 말씀과 마음 남기기</h1>
-          <p className="signed-in">{email} 계정으로 로그인됨</p>
-        </div>
-        <form action={logout}>
-          <button className="text-button" type="submit">
-            로그아웃
-          </button>
-        </form>
-      </header>
+    <main className="app-shell write-shell">
+      <FamilyNav
+        active="write"
+        displayName={member.displayName}
+        role={member.role}
+      />
 
-      <section className="panel">
-        <p className="panel-copy">
-          저장한 묵상과 편지는 가족이 보는 공개 화면에 최신순으로 표시됩니다.
-        </p>
+      <section className="write-heading">
+        <p className="eyebrow">New story</p>
+        <h1>오늘의 마음 남기기</h1>
+        <p>{member.displayName}님의 묵상과 이야기를 가족에게 전해보세요.</p>
+      </section>
+
+      {profileError ? (
+        <section className="notice notice-error" role="alert">
+          <h2>v2.0 데이터베이스 설정이 필요합니다</h2>
+          <p>`002_family_members_and_roles.sql`을 SQL Editor에서 실행해 주세요.</p>
+        </section>
+      ) : null}
+
+      <section className="panel write-panel">
         <EntryForm />
       </section>
 
-      <Link className="secondary-link" href="/">
-        가족이 보는 화면에서 확인하기
-      </Link>
+      <p className="write-note">
+        등록한 글은 외부에 공개되지 않고 로그인한 가족만 읽을 수 있습니다.
+      </p>
     </main>
   );
 }

@@ -25,7 +25,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       const { data } = (await supabase?.auth.getClaims()) ?? { data: null };
 
       if (data?.claims) {
-        redirect("/admin");
+        redirect("/family");
       }
     } catch {
       // Keep the login page available and show connection errors on submit.
@@ -36,16 +36,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const errorMessage = params.error ? errorMessages[params.error] : null;
 
   return (
-    <main className="site-shell narrow-shell">
+    <main className="login-shell">
       <Link className="back-link" href="/">
-        말씀편지 목록으로 돌아가기
+        소개 화면으로 돌아가기
       </Link>
 
       <section className="panel auth-panel">
-        <p className="eyebrow">우리 가족 말씀편지</p>
-        <h1>글쓴이 로그인</h1>
+        <span className="login-mark" aria-hidden="true">우</span>
+        <p className="eyebrow">Family only</p>
+        <h1>가족 공간에 오신 것을<br />환영합니다</h1>
         <p className="panel-copy">
-          권사님 계정으로 로그인하면 묵상과 편지를 새로 남길 수 있습니다.
+          권사님 또는 가족 계정으로 로그인해 함께 읽고 글을 남겨보세요.
         </p>
 
         {!configured ? <SetupNotice compact /> : null}
@@ -78,7 +79,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           />
 
           <button className="primary-button" type="submit" disabled={!configured}>
-            로그인
+            가족 공간 들어가기
           </button>
         </form>
       </section>

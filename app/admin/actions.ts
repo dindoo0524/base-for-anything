@@ -63,9 +63,43 @@ export async function createEntry(
     };
   }
 
-  revalidatePath("/");
+  revalidatePath("/family");
 
-  return { status: "success", message: "저장했습니다. 공개 화면에 바로 표시됩니다." };
+  return { status: "success", message: "저장했습니다. 가족 게시판에 바로 표시됩니다." };
+}
+
+export async function deleteEntry(formData: FormData) {
+  const entryId = String(formData.get("entryId") ?? "").trim();
+
+  if (!entryId) {
+    redirect("/family?notice=delete-failed");
+  }
+
+  const supabase = await createClient();
+
+  if (!supabase) {
+    redirect("/family?notice=delete-failed");
+  }
+
+  const { data: claimsData, error: authError } = await supabase.auth.getClaims();
+
+  if (authError || !claimsData?.claims?.sub) {
+    redirect("/login");
+  }
+
+  const { data, error } = await supabase
+    .from("entries")
+    .delete()
+    .eq("id", entryId)
+    .select("id");
+
+  if (error || !data?.length) {
+    redirect("/family?notice=delete-not-allowed");
+  }
+
+  revalidatePath("/family");
+  revalidatePath(`/entries/${entryId}`);
+  redirect("/family?notice=deleted");
 }
 
 export async function logout() {
@@ -75,5 +109,5 @@ export async function logout() {
     await supabase.auth.signOut();
   }
 
-  redirect("/login");
+  redirect("/");
 }

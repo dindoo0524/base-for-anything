@@ -42,7 +42,14 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
-  if (!hasClaims && request.nextUrl.pathname.startsWith("/admin")) {
+  const protectedPaths = ["/account", "/admin", "/family", "/entries"];
+  const isProtectedPath = protectedPaths.some(
+    (path) =>
+      request.nextUrl.pathname === path ||
+      request.nextUrl.pathname.startsWith(`${path}/`),
+  );
+
+  if (!hasClaims && isProtectedPath) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.search = "";
@@ -50,10 +57,10 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (hasClaims && request.nextUrl.pathname.startsWith("/login")) {
-    const adminUrl = request.nextUrl.clone();
-    adminUrl.pathname = "/admin";
-    adminUrl.search = "";
-    return NextResponse.redirect(adminUrl);
+    const familyUrl = request.nextUrl.clone();
+    familyUrl.pathname = "/family";
+    familyUrl.search = "";
+    return NextResponse.redirect(familyUrl);
   }
 
   return response;

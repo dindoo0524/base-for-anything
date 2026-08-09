@@ -17,7 +17,7 @@ function SubmitButton() {
 
   return (
     <button className="primary-button" type="submit" disabled={pending}>
-      {pending ? "저장하는 중…" : "말씀편지 저장"}
+      {pending ? "등록하는 중…" : "가족에게 공유하기"}
     </button>
   );
 }
@@ -34,24 +34,24 @@ export function EntryForm() {
 
   return (
     <form ref={formRef} action={formAction} className="form-stack">
-      <label htmlFor="title">글 제목</label>
+      <label htmlFor="title">제목</label>
       <input
         id="title"
         name="title"
         type="text"
         maxLength={120}
         required
-        placeholder="예: 오늘의 묵상 - 시편 23편"
+        placeholder="예: 오늘 마음에 남은 말씀"
       />
 
-      <label htmlFor="content">묵상 또는 편지 내용</label>
+      <label htmlFor="content">가족에게 전할 내용</label>
       <textarea
         id="content"
         name="content"
         rows={8}
         maxLength={5000}
         required
-        placeholder="오늘 마음에 남은 말씀이나 가족에게 전하고 싶은 마음을 적어보세요."
+        placeholder="묵상한 내용이나 가족에게 전하고 싶은 마음을 편하게 적어보세요."
       />
 
       {state.message ? (
