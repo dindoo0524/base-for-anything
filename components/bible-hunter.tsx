@@ -1,20 +1,16 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const CONFIG = {
   year: 2026,
   month: 8,
   minReflection: 50,
   maxReflection: 100,
-  keys: {
-    users: "bible-hunter-v3-users",
-    entries: "bible-hunter-v3-entries",
-    session: "bible-hunter-v3-session",
-  },
 } as const;
 
-type Screen = "name" | "scripture" | "reflection" | "dashboard";
+type Screen = "scripture" | "reflection" | "dashboard";
 type User = { id: string; name: string; createdAt: string };
 type Entry = {
   id: string;
@@ -25,10 +21,21 @@ type Entry = {
   createdAt: string;
   updatedAt: string;
 };
+type Comment = {
+  id: string;
+  entryId: string;
+  authorId: string;
+  parentCommentId: string | null;
+  content: string;
+  createdAt: string;
+};
 
 const pad = (value: number) => String(value).padStart(2, "0");
 const targetDate = (day: number) => `${CONFIG.year}-${pad(CONFIG.month)}-${pad(day)}`;
 const days = Array.from({ length: new Date(CONFIG.year, CONFIG.month, 0).getDate() }, (_, i) => i + 1);
+const scriptureSchedule: Record<string, string> = {
+  "2026-08-11": "창세기 11장 1–9절",
+};
 const localDate = () => {
   const date = new Date();
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -37,81 +44,77 @@ const formatDate = (value: string) => {
   const [, month, day] = value.split("-");
   return `${Number(month)}월 ${Number(day)}일`;
 };
-const newId = (prefix: string) =>
-  `${prefix}_${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(36).slice(2)}`}`;
+const formatCommentTime = (value: string) => new Intl.DateTimeFormat("ko-KR", {
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+}).format(new Date(value));
 
-function readArray<T>(key: string): T[] {
-  try {
-    const value = JSON.parse(localStorage.getItem(key) || "[]");
-    return Array.isArray(value) ? value.filter(Boolean) : [];
-  } catch {
-    return [];
-  }
-}
-
-function write(key: string, value: unknown) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function BibleHunter() {
+export function BibleHunter({ authenticatedUser }: { authenticatedUser: { id: string; name: string } }) {
   const [ready, setReady] = useState(false);
-  const [screen, setScreen] = useState<Screen>("name");
+  const [screen, setScreen] = useState<Screen>("dashboard");
   const [users, setUsers] = useState<User[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [name, setName] = useState("");
   const [scripture, setScripture] = useState("");
   const [reflection, setReflection] = useState("");
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(targetDate(1));
-  const [nameError, setNameError] = useState("");
   const [scriptureError, setScriptureError] = useState("");
+  const [showScriptureChoices, setShowScriptureChoices] = useState(false);
   const [reflectionError, setReflectionError] = useState("");
   const [modalEntry, setModalEntry] = useState<Entry | null>(null);
   const [toast, setToast] = useState("");
+  const [commentText, setCommentText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [commentError, setCommentError] = useState("");
+  const [savingComment, setSavingComment] = useState(false);
   const modalRef = useRef<HTMLElement>(null);
 
   const today = localDate();
   const targetMonth = `${CONFIG.year}-${pad(CONFIG.month)}-`;
   const todayInTargetMonth = today.startsWith(targetMonth);
   const currentUser = users.find((user) => user.id === currentUserId);
+  const scheduledScripture = scriptureSchedule[editingDate ?? today];
 
   useEffect(() => {
-    /* Client-only localStorage hydration intentionally initializes the app after mount. */
-    /* eslint-disable react-hooks/set-state-in-effect */
-    const storedUsers = readArray<User>(CONFIG.keys.users);
-    const storedEntries = readArray<Entry>(CONFIG.keys.entries);
-    setUsers(storedUsers);
-    setEntries(storedEntries);
-    try {
-      const session = JSON.parse(localStorage.getItem(CONFIG.keys.session) || "null");
-      const user = storedUsers.find((item) => item.id === session?.userId);
-      if (user) {
-        setCurrentUserId(user.id);
-        if (todayInTargetMonth) {
-          const entry = storedEntries.find((item) => item.userId === user.id && item.date === today);
-          if (entry) {
-            setSelectedDate(today);
-            setScreen("dashboard");
-          } else {
-            setEditingDate(today);
-            setScreen("scripture");
-          }
-        } else {
+    async function loadSharedData() {
+      const supabase = createClient();
+      if (!supabase) return setReady(true);
+      const [profilesResult, entriesResult, commentsResult] = await Promise.all([
+        supabase.from("profiles").select("id, nickname, created_at"),
+        supabase.from("qt_entries").select("id, author_id, entry_date, scripture, reflection, created_at, updated_at").order("entry_date"),
+        supabase.from("qt_comments").select("id, entry_id, author_id, parent_comment_id, content, created_at").order("created_at"),
+      ]);
+      const loadedUsers: User[] = (profilesResult.data ?? []).map((item) => ({ id: item.id, name: item.nickname, createdAt: item.created_at }));
+      const loadedEntries: Entry[] = (entriesResult.data ?? []).map((item) => ({ id: item.id, userId: item.author_id, date: item.entry_date, scripture: item.scripture, reflection: item.reflection, createdAt: item.created_at, updatedAt: item.updated_at }));
+      const loadedComments: Comment[] = (commentsResult.data ?? []).map((item) => ({ id: item.id, entryId: item.entry_id, authorId: item.author_id, parentCommentId: item.parent_comment_id, content: item.content, createdAt: item.created_at }));
+      setUsers(loadedUsers.length ? loadedUsers : [{ id: authenticatedUser.id, name: authenticatedUser.name, createdAt: new Date().toISOString() }]);
+      setEntries(loadedEntries);
+      setComments(loadedComments);
+      setCurrentUserId(authenticatedUser.id);
+      if (entriesResult.error || commentsResult.error || profilesResult.error) {
+        setToast("Supabase의 최신 migration을 먼저 실행해 주세요.");
+        setScreen("dashboard");
+      } else if (todayInTargetMonth) {
+        const entry = loadedEntries.find((item) => item.userId === authenticatedUser.id && item.date === today);
+        if (entry) {
+          setSelectedDate(today);
           setScreen("dashboard");
+        } else {
+          setEditingDate(today);
+          setScreen("scripture");
         }
+      } else {
+        setScreen("dashboard");
       }
-    } catch {
-      localStorage.removeItem(CONFIG.keys.session);
+      setReady(true);
     }
-    setReady(true);
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [today, todayInTargetMonth]);
+    void loadSharedData();
+  }, [authenticatedUser.id, authenticatedUser.name, today, todayInTargetMonth]);
 
   useEffect(() => {
     if (!toast) return;
@@ -139,32 +142,6 @@ export function BibleHunter() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function submitName(event: FormEvent) {
-    event.preventDefault();
-    const normalized = name.trim().replace(/\s+/g, " ");
-    if (!normalized) return setNameError("이름 또는 별명을 입력해 주세요.");
-    let user = users.find((item) => item.name.toLocaleLowerCase("ko-KR") === normalized.toLocaleLowerCase("ko-KR"));
-    let nextUsers = users;
-    if (!user) {
-      user = { id: newId("user"), name: normalized, createdAt: new Date().toISOString() };
-      nextUsers = [...users, user];
-    }
-    if (!write(CONFIG.keys.users, nextUsers) || !write(CONFIG.keys.session, { userId: user.id })) {
-      return setNameError("저장 공간을 사용할 수 없습니다.");
-    }
-    setUsers(nextUsers);
-    setCurrentUserId(user.id);
-    setNameError("");
-    const entry = todayInTargetMonth
-      ? entries.find((item) => item.userId === user.id && item.date === today)
-      : undefined;
-    if (todayInTargetMonth && !entry) beginEntry();
-    else {
-      setSelectedDate(todayInTargetMonth ? today : targetDate(1));
-      setScreen("dashboard");
-    }
-  }
-
   function submitScripture(event: FormEvent) {
     event.preventDefault();
     if (!scripture.trim()) return setScriptureError("읽은 성경 범위를 입력해 주세요.");
@@ -174,7 +151,14 @@ export function BibleHunter() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function submitReflection(event: FormEvent) {
+  function selectScheduledScripture() {
+    if (!scheduledScripture) return;
+    setScripture(scheduledScripture);
+    setScriptureError("");
+    setShowScriptureChoices(false);
+  }
+
+  async function submitReflection(event: FormEvent) {
     event.preventDefault();
     if (reflection.length < CONFIG.minReflection || !reflection.replace(/\s/g, "")) {
       return setReflectionError(`묵상을 ${Math.max(0, CONFIG.minReflection - reflection.length)}자 더 작성해 주세요.`);
@@ -183,32 +167,26 @@ export function BibleHunter() {
       return setReflectionError(`${CONFIG.year}년 ${CONFIG.month}월에만 새 기록을 작성할 수 있습니다.`);
     }
     const previous = entries.find((entry) => entry.userId === currentUserId && entry.date === editingDate);
-    const now = new Date().toISOString();
-    const saved: Entry = {
-      id: previous?.id ?? newId("entry"),
-      userId: currentUserId,
-      date: editingDate,
-      scripture: scripture.trim(),
-      reflection,
-      createdAt: previous?.createdAt ?? now,
-      updatedAt: now,
-    };
-    const nextEntries = previous
-      ? entries.map((entry) => (entry.id === previous.id ? saved : entry))
-      : [...entries, saved];
-    if (!write(CONFIG.keys.entries, nextEntries)) return setReflectionError("기록을 저장하지 못했습니다.");
-    setEntries(nextEntries);
+    const supabase = createClient();
+    if (!supabase) return setReflectionError("Supabase 연결을 확인해 주세요.");
+    const payload = { author_id: currentUserId, entry_date: editingDate, scripture: scripture.trim(), reflection };
+    const result = previous
+      ? await supabase.from("qt_entries").update(payload).eq("id", previous.id).select("id, author_id, entry_date, scripture, reflection, created_at, updated_at").single()
+      : await supabase.from("qt_entries").insert(payload).select("id, author_id, entry_date, scripture, reflection, created_at, updated_at").single();
+    if (result.error || !result.data) return setReflectionError("기록을 저장하지 못했습니다. migration과 연결 상태를 확인해 주세요.");
+    const item = result.data;
+    const saved: Entry = { id: item.id, userId: item.author_id, date: item.entry_date, scripture: item.scripture, reflection: item.reflection, createdAt: item.created_at, updatedAt: item.updated_at };
+    setEntries((current) => previous ? current.map((entry) => entry.id === previous.id ? saved : entry) : [...current, saved]);
     setSelectedDate(editingDate);
     setEditingDate(null);
     setScreen("dashboard");
     setToast("오늘의 QT가 저장되었습니다.");
   }
 
-  function changeUser() {
-    localStorage.removeItem(CONFIG.keys.session);
-    setCurrentUserId(null);
-    setName("");
-    setScreen("name");
+  async function logout() {
+    const supabase = createClient();
+    await supabase?.auth.signOut();
+    window.location.reload();
   }
 
   function openEntry(entry: Entry | undefined, date: string) {
@@ -220,25 +198,46 @@ export function BibleHunter() {
     setModalEntry(entry);
   }
 
+  function closeEntry() {
+    setModalEntry(null);
+    setCommentText("");
+    setReplyText("");
+    setReplyingTo(null);
+    setCommentError("");
+  }
+
+  async function submitComment(event: FormEvent) {
+    event.preventDefault();
+    if (!modalEntry || !currentUserId || modalEntry.userId === currentUserId || !commentText.trim()) return;
+    setSavingComment(true);
+    setCommentError("");
+    const supabase = createClient();
+    const { data, error } = supabase ? await supabase.from("qt_comments").insert({ entry_id: modalEntry.id, author_id: currentUserId, content: commentText.trim() }).select("id, entry_id, author_id, parent_comment_id, content, created_at").single() : { data: null, error: new Error("Supabase is not configured") };
+    setSavingComment(false);
+    if (error || !data) return setCommentError("댓글을 저장하지 못했습니다.");
+    setComments((current) => [...current, { id: data.id, entryId: data.entry_id, authorId: data.author_id, parentCommentId: data.parent_comment_id, content: data.content, createdAt: data.created_at }]);
+    setCommentText("");
+  }
+
+  async function submitReply(event: FormEvent, parentCommentId: string) {
+    event.preventDefault();
+    if (!modalEntry || !currentUserId || modalEntry.userId !== currentUserId || !replyText.trim()) return;
+    setSavingComment(true);
+    setCommentError("");
+    const supabase = createClient();
+    const { data, error } = supabase ? await supabase.from("qt_comments").insert({ entry_id: modalEntry.id, author_id: currentUserId, parent_comment_id: parentCommentId, content: replyText.trim() }).select("id, entry_id, author_id, parent_comment_id, content, created_at").single() : { data: null, error: new Error("Supabase is not configured") };
+    setSavingComment(false);
+    if (error || !data) return setCommentError("답글을 저장하지 못했습니다.");
+    setComments((current) => [...current, { id: data.id, entryId: data.entry_id, authorId: data.author_id, parentCommentId: data.parent_comment_id, content: data.content, createdAt: data.created_at }]);
+    setReplyText("");
+    setReplyingTo(null);
+  }
+
   if (!ready) return <main className="app"><header className="brand"><span className="brand-mark">✦</span><span>Bible Hunter</span></header></main>;
 
   return (
     <main className="app">
       <header className="brand"><span className="brand-mark" aria-hidden="true">✦</span><span>Bible Hunter</span></header>
-
-      {screen === "name" && (
-        <section className="screen input-screen" aria-labelledby="name-title">
-          <div className="step-label">WELCOME, HUNTER</div>
-          <h1 id="name-title">이름 또는 별명을<br />적어주세요</h1>
-          <p className="lead">처음 한 번만 입력하면 다음부터 바로 오늘의 성경 기록을 시작할 수 있어요.</p>
-          <form onSubmit={submitName} noValidate>
-            <label htmlFor="name-input">이름 또는 별명</label>
-            <input id="name-input" value={name} onChange={(e) => setName(e.target.value)} maxLength={20} autoComplete="name" placeholder="예: 다윗" autoFocus />
-            <p className="field-error" aria-live="polite">{nameError}</p>
-            <button className="primary-button" type="submit">시작하기 <span aria-hidden="true">→</span></button>
-          </form>
-        </section>
-      )}
 
       {screen === "scripture" && (
         <section className="screen input-screen" aria-labelledby="scripture-title">
@@ -246,7 +245,39 @@ export function BibleHunter() {
           <h1 id="scripture-title">오늘 읽은<br />성경 말씀은?</h1>
           <form onSubmit={submitScripture} noValidate>
             <label htmlFor="scripture-input">성경 범위</label>
-            <input id="scripture-input" value={scripture} onChange={(e) => setScripture(e.target.value)} maxLength={50} placeholder="예: 창세기 1장 1–10절" autoFocus />
+            <div className="scripture-field">
+              <input
+                id="scripture-input"
+                value={scripture}
+                onChange={(e) => setScripture(e.target.value)}
+                onFocus={() => setShowScriptureChoices(true)}
+                onKeyDown={(e) => { if (e.key === "Escape") setShowScriptureChoices(false); }}
+                maxLength={50}
+                placeholder="예: 창세기 1장 1–10절"
+                role="combobox"
+                aria-expanded={showScriptureChoices}
+                aria-controls="scripture-choices"
+                autoFocus
+              />
+              {showScriptureChoices && (
+                <div className="scripture-choices" id="scripture-choices">
+                  {scheduledScripture && (
+                    <button className="scripture-choice is-scheduled" type="button" onClick={selectScheduledScripture}>
+                      <span><small>오늘 · {formatDate(editingDate ?? today)}</small><strong>{scheduledScripture}</strong></span>
+                      <span aria-hidden="true">✓</span>
+                    </button>
+                  )}
+                  <button className="scripture-choice" type="button" onClick={() => {
+                    setScripture("");
+                    setShowScriptureChoices(false);
+                    window.setTimeout(() => document.getElementById("scripture-input")?.focus(), 0);
+                  }}>
+                    <span><small>다른 범위를 읽었나요?</small><strong>직접 입력하기</strong></span>
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+              )}
+            </div>
             <p className="field-help">책, 장, 절을 자유롭게 적어주세요.</p>
             <p className="field-error" aria-live="polite">{scriptureError}</p>
             <button className="primary-button" type="submit">다음 <span aria-hidden="true">→</span></button>
@@ -273,7 +304,7 @@ export function BibleHunter() {
         <section className="screen dashboard-screen" aria-labelledby="dashboard-title">
           <div className="dashboard-header">
             <div><div className="step-label">AUGUST 2026</div><h1 id="dashboard-title">우리의 QT 여정</h1></div>
-            <button className="user-button" type="button" onClick={changeUser}><span>{currentUser?.name}</span><small>사용자 변경</small></button>
+            <button className="user-button" type="button" onClick={logout}><span>{currentUser?.name}</span><small>로그아웃</small></button>
           </div>
           <div className="today-action">
             {todayInTargetMonth ? (
@@ -310,13 +341,33 @@ export function BibleHunter() {
 
       <div className={`toast${toast ? " is-visible" : ""}`} role="status" aria-live="polite">{toast}</div>
       {modalEntry && (
-        <div className="modal" role="presentation" onKeyDown={(e) => { if (e.key === "Escape") setModalEntry(null); }}>
-          <button className="modal-backdrop" type="button" aria-label="묵상 상세 닫기" onClick={() => setModalEntry(null)} />
+        <div className="modal" role="presentation" onKeyDown={(e) => { if (e.key === "Escape") closeEntry(); }}>
+          <button className="modal-backdrop" type="button" aria-label="묵상 상세 닫기" onClick={closeEntry} />
           <article className="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabIndex={-1} ref={modalRef}>
-            <button className="modal-close" type="button" onClick={() => setModalEntry(null)} aria-label="묵상 상세 닫기">×</button>
+            <button className="modal-close" type="button" onClick={closeEntry} aria-label="묵상 상세 닫기">×</button>
             <p className="eyebrow">{CONFIG.year}년 {formatDate(modalEntry.date)}</p><h2 id="modal-title">{users.find((user) => user.id === modalEntry.userId)?.name || "구성원"}님의 묵상</h2>
             <dl><dt>읽은 성경</dt><dd>{modalEntry.scripture}</dd><dt>묵상</dt><dd className="modal-reflection">{modalEntry.reflection}</dd></dl>
-            {modalEntry.userId === currentUserId && <button className="secondary-button" type="button" onClick={() => { const entry = modalEntry; setModalEntry(null); beginEntry(entry); }}>내 기록 수정</button>}
+            {modalEntry.userId === currentUserId && <button className="secondary-button" type="button" onClick={() => { const entry = modalEntry; closeEntry(); beginEntry(entry); }}>내 기록 수정</button>}
+            <section className="comments" aria-labelledby="comments-title">
+              <div className="comments-heading"><h3 id="comments-title">댓글</h3><span>{comments.filter((comment) => comment.entryId === modalEntry.id && !comment.parentCommentId).length}</span></div>
+              <div className="comment-list">
+                {comments.filter((comment) => comment.entryId === modalEntry.id && !comment.parentCommentId).map((comment) => {
+                  const reply = comments.find((item) => item.parentCommentId === comment.id);
+                  return (
+                    <article className="comment-thread" key={comment.id}>
+                      <div className="comment-item"><div className="comment-meta"><strong>{users.find((user) => user.id === comment.authorId)?.name || "구성원"}</strong><time dateTime={comment.createdAt}>{formatCommentTime(comment.createdAt)}</time></div><p>{comment.content}</p></div>
+                      {reply && <div className="comment-item comment-reply"><div className="comment-meta"><strong>{users.find((user) => user.id === reply.authorId)?.name || "작성자"} · 작성자 답글</strong><time dateTime={reply.createdAt}>{formatCommentTime(reply.createdAt)}</time></div><p>{reply.content}</p></div>}
+                      {modalEntry.userId === currentUserId && !reply && (replyingTo === comment.id ? (
+                        <form className="reply-form" onSubmit={(event) => submitReply(event, comment.id)}><label htmlFor={`reply-${comment.id}`}>답글</label><textarea id={`reply-${comment.id}`} value={replyText} onChange={(e) => setReplyText(e.target.value)} maxLength={300} rows={2} autoFocus /><div className="comment-actions"><button type="button" onClick={() => { setReplyingTo(null); setReplyText(""); }}>취소</button><button type="submit" disabled={savingComment || !replyText.trim()}>답글 등록</button></div></form>
+                      ) : <button className="reply-button" type="button" onClick={() => { setReplyingTo(comment.id); setReplyText(""); }}>답글 쓰기</button>)}
+                    </article>
+                  );
+                })}
+                {!comments.some((comment) => comment.entryId === modalEntry.id && !comment.parentCommentId) && <p className="comments-empty">아직 댓글이 없습니다.</p>}
+              </div>
+              {modalEntry.userId !== currentUserId && <form className="comment-form" onSubmit={submitComment}><label htmlFor="comment-input">댓글 남기기</label><textarea id="comment-input" value={commentText} onChange={(e) => setCommentText(e.target.value)} maxLength={300} rows={3} placeholder="묵상을 읽고 나눈 마음을 적어주세요." /><button type="submit" disabled={savingComment || !commentText.trim()}>댓글 등록</button></form>}
+              <p className="field-error" aria-live="polite">{commentError}</p>
+            </section>
           </article>
         </div>
       )}
