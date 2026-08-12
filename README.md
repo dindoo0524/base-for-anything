@@ -23,21 +23,28 @@ npm run dev
 
 ## 2. Supabase 데이터베이스 준비
 
-처음 만드는 프로젝트라면 Supabase **SQL Editor**에서 아래 파일을 순서대로 실행합니다.
+1. [Supabase Dashboard](https://supabase.com/dashboard)에서 새 프로젝트를 만듭니다.
+2. 프로젝트가 준비될 때까지 기다립니다.
+3. 왼쪽 메뉴의 **SQL Editor**를 엽니다.
+4. `supabase/migrations/001_create_entries.sql` 파일의 전체 내용을 붙여넣고 실행합니다.
+5. `supabase/migrations/002_create_profiles.sql` 파일의 전체 내용을 붙여넣고 실행합니다.
+6. `supabase/migrations/003_create_qt_entries_comments.sql` 파일의 전체 내용을 붙여넣고 실행합니다.
+7. 기존 가입 계정이 있다면 `supabase/migrations/004_backfill_missing_profiles.sql` 파일도 실행합니다.
+8. `supabase/migrations/005_create_daily_scriptures.sql` 파일의 전체 내용을 붙여넣고 실행합니다.
+9. `supabase/migrations/006_allow_own_entry_comments.sql` 파일의 전체 내용을 붙여넣고 실행합니다.
+10. **Table Editor**에서 `entries`, `profiles`, `qt_entries`, `qt_comments`, `daily_scriptures` 테이블이 생겼는지 확인합니다.
 
 1. `supabase/migrations/001_create_entries.sql`
 2. `supabase/migrations/002_family_members_and_roles.sql`
 
-이미 v1.0 migration을 실행했다면 두 번째 파일만 실행합니다.
+## 3. 회원가입 설정
 
-v2.0 migration은 다음 내용을 적용합니다.
+회원가입 화면에서 이메일, 비밀번호, 별명을 입력합니다. 비밀번호는 Supabase Auth가 관리하고 별명만 `profiles` 테이블에 저장됩니다.
 
-- `profiles` 테이블과 `admin`·`member` 역할
-- 새 Auth 사용자의 가족 프로필 자동 생성
-- 기존 Auth 사용자의 가족 프로필 생성
-- 외부 방문자의 글 조회 차단
-- 가족 회원의 전체 글 조회와 자기 글 삭제
-- 관리자의 모든 글 삭제
+1. Supabase Dashboard의 **Authentication → Providers → Email**로 이동합니다.
+2. 이메일 인증을 사용할 경우 **Confirm email**을 켭니다.
+3. 개발 중 이메일 확인 없이 바로 가입하려면 **Confirm email**을 끕니다.
+4. 배포 주소를 **Authentication → URL Configuration**의 Site URL에 등록합니다.
 
 ## 3. 관리자와 가족 계정 만들기
 
@@ -89,18 +96,17 @@ service role 또는 secret key를 브라우저 환경변수에 넣지 않습니�
 
 ## 5. 화면 확인
 
-| 주소 | 역할 |
-| --- | --- |
-| `/` | 외부 공개용 프로젝트 소개 |
-| `/login` | 관리자와 가족 공용 로그인 |
-| `/family` | 로그인한 가족만 보는 글 목록 |
-| `/entries/[id]` | 로그인한 가족만 보는 상세 글 |
-| `/admin` | 로그인한 가족의 새 글 작성 |
-| `/account` | 이름, 역할, 현재 권한, 로그아웃 |
+1. `/`의 회원가입 탭에서 이메일, 비밀번호, 별명을 입력합니다.
+2. 이메일 인증이 켜져 있으면 받은 메일의 링크를 누른 뒤 로그인합니다.
+3. 로그인 후 Bible Hunter 화면에 가입한 별명이 보이는지 확인합니다.
+4. Supabase **Table Editor → profiles**에서 사용자 ID와 별명을 확인합니다.
+5. 로그아웃 후 이메일과 비밀번호로 다시 로그인되는지 확인합니다.
 
 로그아웃한 상태로 `/family`, `/entries/[id]`, `/admin`, `/account`를 열면 `/login`으로 이동합니다.
 
-## 6. 역할별 테스트
+다음 달 QT 본문을 추가할 때는 [`guides/daily-scripture-management.md`](guides/daily-scripture-management.md)의 SQL 예시를 사용합니다.
+
+## 6. GitHub에 저장하기
 
 계정을 두 개 이상 만들고 아래 순서로 확인합니다.
 
@@ -150,4 +156,62 @@ service role 또는 secret key를 브라우저 환경변수에 넣지 않습니�
 - 작은 작업 정리: `오늘의 주문서를 작성할게요.`
 - 승인한 주문 구현: `이 주문서대로 작업해주세요.`
 
-관련 문서는 `worksheets/`, `guides/`, `orders/`에서 확인합니다.
+### 오늘 할 일 한 가지 정리하기
+
+```text
+오늘의 주문서를 작성할게요.
+```
+
+Codex는 `guides/order-flow.md`를 따라 작은 작업 하나로 정리하고 초안을 보여줍니다. 승인된 주문서는 `orders/`에 날짜별로 저장됩니다.
+
+### 승인한 주문 구현하기
+
+```text
+이 주문서대로 작업해주세요.
+```
+
+Codex는 승인된 주문서 범위만 구현하고 lint와 build 결과를 같은 주문서에 기록합니다.
+
+## 9. 자주 생기는 문제
+
+### `npm` 명령을 찾을 수 없습니다
+
+Node.js가 설치되지 않은 상태입니다. Node.js 20.9 이상을 설치한 뒤 새 터미널을 열어 다시 실행합니다.
+
+### Supabase 연결 안내만 보입니다
+
+`.env.local` 파일 위치와 환경변수 이름을 확인하고 개발 서버를 다시 시작합니다. 값 앞뒤의 불필요한 공백도 확인합니다.
+
+### 회원가입 또는 로그인이 되지 않습니다
+
+`002_create_profiles.sql`을 실행했는지 확인하고 Supabase Dashboard의 **Authentication → Users**에서 사용자가 생성됐는지 살펴봅니다. 이메일 인증이 켜져 있으면 인증 메일을 먼저 확인해야 합니다.
+
+### 저장할 수 없습니다
+
+로그인 상태, `entries` migration 실행 여부, Supabase **Logs**, 환경변수 설정을 차례로 확인합니다. 제목은 120자, 내용은 5,000자 이하여야 합니다.
+
+### 공개 화면에 내용이 보이지 않습니다
+
+SQL Editor에서 migration 전체가 오류 없이 실행되었는지 확인합니다. `entries` 테이블의 RLS와 `Anyone can read entries` 정책도 확인합니다.
+
+### Vercel에서만 연결되지 않습니다
+
+Vercel 프로젝트의 환경변수 두 개가 Production 환경에 등록되었는지 확인한 뒤 다시 배포합니다. `.env.local`은 Vercel에 자동 업로드되지 않습니다.
+
+## 10. 이번 버전의 범위
+
+현재는 텍스트 작성과 공개 조회에 집중합니다. 카메라, 이미지 촬영, 파일 업로드, Supabase Storage는 텍스트 흐름이 안정적으로 작동한 뒤 별도 주문으로 진행합니다. 수정·삭제를 위한 본인 데이터 권한은 SQL에 준비되어 있지만 화면은 아직 없습니다.
+
+## 주요 폴더
+
+```text
+app/                    화면과 Server Actions
+components/             반복해서 쓰는 화면 요소
+lib/supabase/           브라우저·서버·세션 연결
+supabase/migrations/    데이터베이스와 보안 정책 SQL
+guides/                 Codex 인터뷰 진행 순서
+worksheets/             프로젝트 시작 양식
+orders/                 날짜별 작업 주문서
+```
+
+기술 기준은 [Next.js 16 Proxy 문서](https://nextjs.org/docs/app/getting-started/proxy)와 [Supabase SSR 클라이언트 문서](https://supabase.com/docs/guides/auth/server-side/creating-a-client?framework=nextjs&queryGroups=framework)를 따릅니다.
