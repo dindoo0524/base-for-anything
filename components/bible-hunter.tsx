@@ -266,10 +266,14 @@ export function BibleHunterV2({ authenticatedUser }: { authenticatedUser: { id: 
       )}
 
       {screen === "dashboard" && (
-          <section className="screen dashboard-screen" aria-labelledby="dashboard-title">
+        <section className="screen dashboard-screen" aria-labelledby="dashboard-title">
           <div className="dashboard-header">
-            <div><div className="step-label">{calendarYear}년 {calendarMonth}월</div><h1 id="dashboard-title">우리의 QT 여정</h1></div>
-            <button className="user-button" type="button" onClick={logout}><span>{currentUser?.name}</span><small>로그아웃</small></button>
+            <div className="dashboard-title"><div className="step-label">{calendarYear}년 {calendarMonth}월</div><h1 id="dashboard-title">우리의 QT 여정</h1></div>
+            <div className="profile-card">
+              <span className="profile-avatar" aria-hidden="true">{(currentUser?.name || "?").slice(0, 1)}</span>
+              <span className="profile-copy"><strong>{currentUser?.name || "구성원"}</strong><small>말씀과 함께하는 중</small></span>
+              <button className="logout-button" type="button" onClick={logout}>로그아웃</button>
+            </div>
           </div>
           <div className="today-action">
             <button className="today-card" type="button" onClick={() => beginEntry(entries.find((entry) => entry.userId === currentUserId && entry.date === today))}>
@@ -278,18 +282,32 @@ export function BibleHunterV2({ authenticatedUser }: { authenticatedUser: { id: 
           </div>
           <section className="tracker-card" aria-labelledby="tracker-title">
             <div className="section-heading"><div><p className="eyebrow">FAMILY PROGRESS</p><h2 id="tracker-title">{calendarMonth}월 전체 현황</h2></div><p>{completed} QT 완료</p></div>
-            <div className="tracker-scroll" tabIndex={0} aria-label={`구성원별 ${calendarMonth}월 QT 현황`}>
-              <div className="tracker-grid" style={{ "--days": days.length } as React.CSSProperties}>
-                <div className="tracker-cell tracker-corner">구성원</div>
-                {days.map((day) => { const date = targetDate(day); return <button key={`day-${day}`} className={`tracker-cell tracker-day${date === today ? " is-today" : ""}${date === selectedDate ? " is-selected" : ""}`} type="button" onClick={() => setSelectedDate(date)}>{day}</button>; })}
-                {users.map((user) => {
-                  const userEntries = entries.filter((entry) => entry.userId === user.id && entry.date.startsWith(targetMonth));
-                  return [
-                    <div className="tracker-cell tracker-name" key={`${user.id}-name`}><strong title={user.name}>{user.name}</strong><small>{userEntries.length} / {days.length}일</small></div>,
-                    ...days.map((day) => { const date = targetDate(day); const entry = userEntries.find((item) => item.date === date); return <button key={`${user.id}-${day}`} className={`tracker-cell tracker-status${entry ? " is-complete" : ""}${date > today ? " is-future" : ""}${date === today ? " is-today" : ""}${date === selectedDate ? " is-selected" : ""}`} type="button" onClick={() => openEntry(entry, date)} aria-label={`${user.name}, ${formatDate(date)}, ${entry ? "묵상 완료" : "기록 없음"}`}>{entry ? "✓" : "·"}</button>; }),
-                  ];
-                })}
-              </div>
+            <div className="family-progress-list" aria-label={`구성원별 ${calendarMonth}월 QT 현황`}>
+              {users.map((user) => {
+                const userEntries = entries.filter((entry) => entry.userId === user.id && entry.date.startsWith(targetMonth));
+                const progress = Math.round((userEntries.length / days.length) * 100);
+                return (
+                  <article className="member-progress-card" key={user.id}>
+                    <div className="member-progress-header">
+                      <span className="member-avatar" aria-hidden="true">{user.name.slice(0, 1)}</span>
+                      <span className="member-progress-copy"><strong>{user.name}</strong><small>{userEntries.length}일 완료</small></span>
+                      <strong className="member-progress-percent">{progress}%</strong>
+                    </div>
+                    <div className="member-progress-track" role="progressbar" aria-label={`${user.name}의 ${calendarMonth}월 진행률`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></div>
+                    <div className="member-days">
+                      {days.map((day) => {
+                        const date = targetDate(day);
+                        const entry = userEntries.find((item) => item.date === date);
+                        return (
+                          <button key={`${user.id}-${day}`} className={`member-day${entry ? " is-complete" : ""}${date > today ? " is-future" : ""}${date === today ? " is-today" : ""}${date === selectedDate ? " is-selected" : ""}`} type="button" onClick={() => openEntry(entry, date)} aria-label={`${user.name}, ${formatDate(date)}, ${entry ? "묵상 완료" : "기록 없음"}`}>
+                            <span>{day}</span><strong aria-hidden="true">{entry ? "✓" : "·"}</strong>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
           <section className="comparison-card" aria-labelledby="comparison-title">
