@@ -32,18 +32,23 @@ npm run dev
 2. 프로젝트가 준비될 때까지 기다립니다.
 3. 왼쪽 메뉴의 **SQL Editor**를 엽니다.
 4. `supabase/migrations/001_create_entries.sql` 파일의 전체 내용을 붙여넣고 실행합니다.
-5. **Table Editor**에서 `entries` 테이블이 생겼는지 확인합니다.
+5. `supabase/migrations/002_create_profiles.sql` 파일의 전체 내용을 붙여넣고 실행합니다.
+6. `supabase/migrations/003_create_qt_entries_comments.sql` 파일의 전체 내용을 붙여넣고 실행합니다.
+7. 기존 가입 계정이 있다면 `supabase/migrations/004_backfill_missing_profiles.sql` 파일도 실행합니다.
+8. `supabase/migrations/005_create_daily_scriptures.sql` 파일의 전체 내용을 붙여넣고 실행합니다.
+9. `supabase/migrations/006_allow_own_entry_comments.sql` 파일의 전체 내용을 붙여넣고 실행합니다.
+10. **Table Editor**에서 `entries`, `profiles`, `qt_entries`, `qt_comments`, `daily_scriptures` 테이블이 생겼는지 확인합니다.
 
 이 SQL은 공개 조회와 로그인 사용자 본인 작성 정책을 분리하고 RLS를 켭니다. 익명 사용자는 내용을 읽을 수 있지만 추가·수정·삭제할 수 없습니다.
 
-## 3. 관리자 사용자 만들기
+## 3. 회원가입 설정
 
-회원가입 화면은 제공하지 않습니다. 관리자 계정이 가족이나 지인에게 임의로 늘어나지 않도록 Supabase Dashboard에서 직접 만듭니다.
+회원가입 화면에서 이메일, 비밀번호, 별명을 입력합니다. 비밀번호는 Supabase Auth가 관리하고 별명만 `profiles` 테이블에 저장됩니다.
 
-1. Supabase Dashboard의 **Authentication → Users**로 이동합니다.
-2. **Add user**를 선택합니다.
-3. 관리자 이메일과 안전한 비밀번호를 입력합니다.
-4. 생성된 계정은 `/login` 화면에서 사용합니다.
+1. Supabase Dashboard의 **Authentication → Providers → Email**로 이동합니다.
+2. 이메일 인증을 사용할 경우 **Confirm email**을 켭니다.
+3. 개발 중 이메일 확인 없이 바로 가입하려면 **Confirm email**을 끕니다.
+4. 배포 주소를 **Authentication → URL Configuration**의 Site URL에 등록합니다.
 
 ## 4. 환경변수 연결하기
 
@@ -60,14 +65,15 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 
 ## 5. 로컬 저장과 조회 확인
 
-1. `/login`에서 Dashboard로 만든 관리자 계정으로 로그인합니다.
-2. `/admin`에서 제목과 내용을 입력하고 저장합니다.
-3. 성공 안내가 나타나고 입력칸이 비워지는지 확인합니다.
-4. **공개 화면에서 확인하기**를 누릅니다.
-5. `/`에서 방금 저장한 내용이 가장 위에 보이는지 확인합니다.
-6. 새로고침해도 내용이 유지되는지 확인합니다.
+1. `/`의 회원가입 탭에서 이메일, 비밀번호, 별명을 입력합니다.
+2. 이메일 인증이 켜져 있으면 받은 메일의 링크를 누른 뒤 로그인합니다.
+3. 로그인 후 Bible Hunter 화면에 가입한 별명이 보이는지 확인합니다.
+4. Supabase **Table Editor → profiles**에서 사용자 ID와 별명을 확인합니다.
+5. 로그아웃 후 이메일과 비밀번호로 다시 로그인되는지 확인합니다.
 
 실패하면 브라우저에 실제 비밀 값이 노출되지 않았는지 확인하고, Supabase의 **Logs**와 SQL 정책 실행 여부를 살펴봅니다.
+
+다음 달 QT 본문을 추가할 때는 [`guides/daily-scripture-management.md`](guides/daily-scripture-management.md)의 SQL 예시를 사용합니다.
 
 ## 6. GitHub에 저장하기
 
@@ -129,9 +135,9 @@ Node.js가 설치되지 않은 상태입니다. Node.js 20.9 이상을 설치한
 
 `.env.local` 파일 위치와 환경변수 이름을 확인하고 개발 서버를 다시 시작합니다. 값 앞뒤의 불필요한 공백도 확인합니다.
 
-### 로그인이 되지 않습니다
+### 회원가입 또는 로그인이 되지 않습니다
 
-Supabase Dashboard의 **Authentication → Users**에서 사용자가 실제로 만들어졌는지, 이메일과 비밀번호가 맞는지 확인합니다. 이 앱에는 공개 회원가입 화면이 없습니다.
+`002_create_profiles.sql`을 실행했는지 확인하고 Supabase Dashboard의 **Authentication → Users**에서 사용자가 생성됐는지 살펴봅니다. 이메일 인증이 켜져 있으면 인증 메일을 먼저 확인해야 합니다.
 
 ### 저장할 수 없습니다
 
