@@ -44,7 +44,7 @@ const formatCommentTime = (value: string) => new Intl.DateTimeFormat("ko-KR", {
   minute: "2-digit",
 }).format(new Date(value));
 
-export function BibleHunterV2({ authenticatedUser }: { authenticatedUser: { id: string; name: string } }) {
+export function BibleHunterV1({ authenticatedUser }: { authenticatedUser: { id: string; name: string } }) {
   const [ready, setReady] = useState(false);
   const [screen, setScreen] = useState<Screen>("dashboard");
   const [users, setUsers] = useState<User[]>([]);
@@ -222,10 +222,10 @@ export function BibleHunterV2({ authenticatedUser }: { authenticatedUser: { id: 
     setReplyingTo(null);
   }
 
-  if (!ready) return <main className="app app-v2"><header className="brand"><span className="brand-mark">✦</span><span>Bible Hunter</span></header></main>;
+  if (!ready) return <main className="app app-v1"><header className="brand"><span className="brand-mark">✦</span><span>Bible Hunter</span></header></main>;
 
   return (
-    <main className="app app-v2">
+    <main className="app app-v1">
       <header className="brand"><span className="brand-mark" aria-hidden="true">✦</span><span>Bible Hunter</span></header>
 
       {screen === "scripture" && (
